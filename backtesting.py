@@ -1,6 +1,8 @@
 import pandas as pd
+import numpy as np
 from dateutil.relativedelta import relativedelta
 from sklearn.model_selection import ParameterGrid
+from sklearn.metrics import accuracy_score
 from tqdm import tqdm
 
 class Backtester:
@@ -27,6 +29,11 @@ class Backtester:
         self.stop_loss = stop_loss
         self.take_profit = take_profit
         self.transaction_costs = transaction_costs
+
+        if "seq_len" in self.model.get_params():
+            self.model_has_seq_len = True
+        else:
+            self.model_has_seq_len = False
 
     def _train_val_test_split(
         self,
@@ -106,7 +113,13 @@ class Backtester:
             self.model.fit(X_train.to_numpy(), y_train.to_numpy().ravel())
 
             y_pred = self.model.predict(X_val.to_numpy()).ravel()
-            score = accuracy_score(y_val, y_pred)
+
+            if self.model_has_seq_len:
+                y_val_adj = y_val.iloc[self.model.get_params("seq_len"):].copy()
+            else:
+                y_val_adj = y_val
+
+            score = accuracy_score(y_val_adj, y_pred)
 
             param_grid_iter.set_postfix({
                 "Accuracy": f"{score:.2f}",
@@ -169,10 +182,13 @@ class Backtester:
 
             self.model.fit(X_train_val_proc.to_numpy(), y_train_val.to_numpy().ravel())
             preds = self.model.predict_proba(X_test_proc.to_numpy())[:, -1]
-
             self.y_pred.append(preds)
-            self.y_test.append(y_test)
-        
+
+            if self.model_has_seq_len:
+                self.y_test.append(y_test.iloc[self.model.get_params("seq_len"):])
+            else:
+                self.y_test.append(y_test)
+
         self.y_test = pd.concat(self.y_test)
         self.y_pred = pd.DataFrame(np.concatenate(self.y_pred), index=self.y_test.index)
         self.results = self._calculate_results()
