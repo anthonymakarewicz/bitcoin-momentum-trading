@@ -1,9 +1,11 @@
 import pandas as pd
 import numpy as np
+
 from dateutil.relativedelta import relativedelta
 from sklearn.model_selection import ParameterGrid
 from sklearn.metrics import accuracy_score
 from tqdm import tqdm
+
 
 class Backtester:
     def __init__(self, 
@@ -115,7 +117,7 @@ class Backtester:
             y_pred = self.model.predict(X_val.to_numpy()).ravel()
 
             if self.model_has_seq_len:
-                y_val_adj = y_val.iloc[self.model.get_params("seq_len"):].copy()
+                y_val_adj = y_val.iloc[self.model.get_params()["seq_len"]:].copy()
             else:
                 y_val_adj = y_val
 
@@ -181,11 +183,11 @@ class Backtester:
             X_test_proc = self._apply_processor_and_autoencoder(X_test, fit=False)
 
             self.model.fit(X_train_val_proc.to_numpy(), y_train_val.to_numpy().ravel())
-            preds = self.model.predict_proba(X_test_proc.to_numpy())[:, -1]
+            preds = self.model.predict_proba(X_test_proc.to_numpy())[:, 1]
             self.y_pred.append(preds)
 
             if self.model_has_seq_len:
-                self.y_test.append(y_test.iloc[self.model.get_params("seq_len"):])
+                self.y_test.append(y_test.iloc[self.model.get_params()["seq_len"]:])
             else:
                 self.y_test.append(y_test)
 
