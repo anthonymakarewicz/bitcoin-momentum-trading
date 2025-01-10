@@ -261,12 +261,13 @@ class Backtester:
                 results.at[results.index[i], "gross_pnl"] = (
                     results.at[results.index[i-1], "position"] * returns.loc[results.index[i]]
                 )
+                results.at[results.index[i], "net_pnl"] = results.at[results.index[i], "gross_pnl"]
+
                 # Transaction costs
                 if results.at[results.index[i], "position"] != results.at[results.index[i-1], "position"]:
-                    results.at[results.index[i], "net_pnl"] = results.at[results.index[i], "gross_pnl"] - self.transaction_costs
+                    results.at[results.index[i], "net_pnl"] -= self.transaction_costs
 
         results["cum_gross_pnl"] = 1 + results["gross_pnl"].cumsum()
-        if "net_pnl" in results.columns:
-            results["cum_net_pnl"] = 1 + results["net_pnl"].cumsum()
+        results["cum_net_pnl"] = 1 + results["net_pnl"].cumsum()
         
         return results
