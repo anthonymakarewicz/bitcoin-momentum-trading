@@ -21,7 +21,7 @@ class FeatureEngineer(BaseEstimator, TransformerMixin):
         df = self._create_volume_features(df, self.windows)
         df = self._create_time_features(df)
 
-        df = df.drop_nulls()
+        df = df.drop_nans().drop_nulls()
 
         if self.drop_original:
             keep_cols = set(df.columns) - set(["Open", "High", "Low", "Close", "Volume"])
@@ -40,10 +40,10 @@ class FeatureEngineer(BaseEstimator, TransformerMixin):
 
         # Rolling mean/std of log returns
         features = []
-        for w in windows:
+        for window in windows:
             features.extend([
-                pl.col('log_returns').rolling_mean(window_size=w).alias(f'mean_log_returns_{w}'),
-                pl.col('log_returns').rolling_std(window_size=w).alias(f'std_log_returns_{w}'),
+                pl.col('log_returns').rolling_mean(window_size=window).alias(f'mean_log_returns_{window}'),
+                pl.col('log_returns').rolling_std(window_size=window).alias(f'std_log_returns_{window}'),
             ])
         
         prices = prices.with_columns(features)
@@ -61,35 +61,35 @@ class FeatureEngineer(BaseEstimator, TransformerMixin):
             pl.Series('MACD_signal', macd_signal)
         ]
 
-        for w in windows:
+        for window in windows:
             # Simple and Exponential Moving Averages
-            sma = ta.SMA(close, timeperiod=w)
-            ema = ta.EMA(close, timeperiod=w)
+            sma = ta.SMA(close, timeperiod=window)
+            ema = ta.EMA(close, timeperiod=window)
 
             # Bollinger Bands
-            bb_upper, _, bb_lower = ta.BBANDS(close, timeperiod=w, nbdevup=2, nbdevdn=2)
+            bb_upper, _, bb_lower = ta.BBANDS(close, timeperiod=window, nbdevup=2, nbdevdn=2)
 
             # Relative Strength Index
-            rsi = ta.RSI(close, timeperiod=w)
+            rsi = ta.RSI(close, timeperiod=window)
 
             # Average Directional Index
-            adx = ta.ADX(high, low, close, timeperiod=w)
+            adx = ta.ADX(high, low, close, timeperiod=window)
 
             # Average True Range
-            atr = ta.ATR(high, low, close, timeperiod=w)
+            atr = ta.ATR(high, low, close, timeperiod=window)
 
             # Rate of Change
-            roc = ta.ROCP(close, timeperiod=w)
+            roc = ta.ROCP(close, timeperiod=window)
 
             indicator_columns.extend([
-                pl.Series(f'SMA_{w}', sma),
-                pl.Series(f'EMA_{w}', ema),
-                pl.Series(f'RSI_{w}', rsi),
-                pl.Series(f'ADX_{w}', adx),
-                pl.Series(f'ATR_{w}', atr),
-                pl.Series(f'ROC_{w}', roc),
-                pl.Series(f'BB_upper_{w}', bb_upper),
-                pl.Series(f'BB_lower_{w}', bb_lower)
+                pl.Series(f'SMA_{window}', sma),
+                pl.Series(f'EMA_{window}', ema),
+                pl.Series(f'RSI_{window}', rsi),
+                pl.Series(f'ADX_{window}', adx),
+                pl.Series(f'ATR_{window}', atr),
+                pl.Series(f'ROC_{window}', roc),
+                pl.Series(f'BB_upper_{window}', bb_upper),
+                pl.Series(f'BB_lower_{window}', bb_lower)
             ])
 
         prices = prices.with_columns(indicator_columns)
@@ -116,18 +116,18 @@ class FeatureEngineer(BaseEstimator, TransformerMixin):
             pl.Series('ADL', adl)
         ])
 
-        for w in windows:
+        for window in windows:
             # Money Flow Index
-            mfi = ta.MFI(prices['High'], prices['Low'], prices['Close'], prices['Volume'], timeperiod=w)
+            mfi = ta.MFI(prices['High'], prices['Low'], prices['Close'], prices['Volume'], timeperiod=window)
 
             # Mean and standard deviation of volume
-            rolling_vol_mean = prices['Volume'].rolling_mean(window_size=w)
-            rolling_vol_std = prices['Volume'].rolling_std(window_size=w)
+            rolling_vol_mean = prices['Volume'].rolling_mean(window_size=window)
+            rolling_vol_std = prices['Volume'].rolling_std(window_size=window)
 
             volume_features.extend([
-                mfi.alias(f'MFI_{w}'),
-                rolling_vol_mean.alias(f'mean_volume_{w}'),
-                rolling_vol_std.alias(f'std_volume_{w}')
+                mfi.alias(f'MFI_{window}'),
+                rolling_vol_mean.alias(f'mean_volume_{window}'),
+                rolling_vol_std.alias(f'std_volume_{window}')
             ])
 
         prices = prices.with_columns(volume_features)

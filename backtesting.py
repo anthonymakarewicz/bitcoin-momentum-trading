@@ -194,7 +194,7 @@ class Backtester:
         self.y_test = pd.concat(self.y_test)
         self.y_pred = pd.DataFrame(np.concatenate(self.y_pred), index=self.y_test.index)
         self.results = self._calculate_results()
-        
+
     def _calculate_results(self):
         results = pd.DataFrame(index=self.y_pred.index)
         results["prediction"] = self.y_pred
